@@ -48,30 +48,16 @@ type StderrHook struct {
 	textFormater *logrus.TextFormatter
 }
 
+//UsefulSetupLogrus
 // 1) set output format to stdout [text|json]
 // 2) set verbosity [panic|fatal|error|warn|info|debug|trace]
-// 3) sending errors to emails [panic|fatal|error|warn]
 // 4) sending logs to stdout [info|debug|trace|panic|fatal|error|warn] and errors to stderr [panic|fatal|error|warn]
 func UsefulSetupLogrus(
 	log *logrus.Logger,
-	mailHostPort string,
 	format string,
 	level string,
-	appName string,
-	sender string,
-	recipient string,
 ) error {
 	log.Out = os.Stdout
-
-	host, strPort, err := net.SplitHostPort(mailHostPort)
-	if err != nil {
-		return err
-	}
-
-	port, err := strconv.Atoi(strPort)
-	if err != nil {
-		return err
-	}
 
 	logLevel, err := logrus.ParseLevel(level)
 	if err != nil {
@@ -85,12 +71,6 @@ func UsefulSetupLogrus(
 	}
 	log.Hooks.Add(stderrHook)
 
-	mailHook, err := NewMailHook(appName, host, port, sender, recipient)
-	if err != nil {
-		return err
-	}
-	log.Hooks.Add(mailHook)
-
 	if format == "json" {
 		log.SetFormatter(&logrus.JSONFormatter{})
 	} else {
@@ -98,6 +78,26 @@ func UsefulSetupLogrus(
 		customFormatter.FullTimestamp = true
 		log.SetFormatter(customFormatter)
 	}
+	return nil
+}
+
+//SetupSendingErrorsToEmail sending errors to emails [panic|fatal|error|warn]
+func SetupSendingErrorsToEmail(log *logrus.Logger, mailHostPort, sender, recipient, appName string) error {
+	host, strPort, err := net.SplitHostPort(mailHostPort)
+	if err != nil {
+		return err
+	}
+
+	port, err := strconv.Atoi(strPort)
+	if err != nil {
+		return err
+	}
+
+	mailHook, err := NewMailHook(appName, host, port, sender, recipient)
+	if err != nil {
+		return err
+	}
+	log.Hooks.Add(mailHook)
 	return nil
 }
 
